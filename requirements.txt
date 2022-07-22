@@ -1,0 +1,6 @@
+recpack
+seaborn
+jupyter
+pathlib
+click
+hyperopt
