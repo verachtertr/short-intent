@@ -23,6 +23,8 @@ Supported values for `<dataset>` and `<algorithm>` are given below.
 * adressa
 * recsys2015
 * cosmeticsshop
+* Amazon games
+* Amazon Toys and Games
 
 ### Supported algorithms
 

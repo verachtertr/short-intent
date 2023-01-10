@@ -12,6 +12,8 @@ from recpack.preprocessing.filters import MinItemsPerUser, MinUsersPerItem
 import pandas as pd
 import time
 
+from amazon_dataset import AmazonGamesDataset, AmazonToysAndGamesDataset
+
 DATASET_PATH = "/home/robinverachtert/datasets/"
 
 
@@ -45,6 +47,18 @@ def get_datasets_info(dataset_path, dataset):
             "t_val": int(datetime.datetime(2014, 9, 1, 0).strftime("%s")),
             "delta_out": 14 * 24 * 3600,
             "delta_space": hp.loguniform("delta", np.log(1800), np.log(180 * 24 * 3600)),
+        },
+        "amazon_games": {
+            "dataset": AmazonGamesDataset(dataset_path),
+            "t": int(datetime.datetime(2018, 4, 1, 0).strftime("%s")),
+            "t_val": int(datetime.datetime(2017, 10, 1, 0).strftime("%s")),
+            "delta_out": 6 * 31 * 24 * 3600,
+        },
+        "amazon_toys_and_games": {
+            "dataset": AmazonToysAndGamesDataset(dataset_path),
+            "t": int(datetime.datetime(2018, 4, 1, 0).strftime("%s")),
+            "t_val": int(datetime.datetime(2017, 10, 1, 0).strftime("%s")),
+            "delta_out": 6 * 31 * 24 * 3600,
         },
     }
     return datasets[dataset]
