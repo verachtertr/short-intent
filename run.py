@@ -15,7 +15,11 @@ import time
 from amazon_dataset import AmazonGamesDataset, AmazonToysAndGamesDataset
 
 DATASET_PATH = "/home/robinverachtert/datasets/"
-
+HOUR = 3600
+DAY = 24*3600
+WEEK = 7*DAY
+MONTH = 31*DAY
+YEAR = 365*DAY
 
 def recsys_dataset(dataset_path):
     ds = RecsysChallenge2015(path=dataset_path, filename="yoochoose-clicks.dat", preprocess_default=False)
@@ -53,12 +57,14 @@ def get_datasets_info(dataset_path, dataset):
             "t": int(datetime.datetime(2018, 4, 1, 0).strftime("%s")),
             "t_val": int(datetime.datetime(2017, 10, 1, 0).strftime("%s")),
             "delta_out": 6 * 31 * 24 * 3600,
+            "delta_space": hp.loguniform("delta", np.log(MONTH), np.log(20*YEAR)),
         },
         "amazon_toys_and_games": {
             "dataset": AmazonToysAndGamesDataset(dataset_path),
             "t": int(datetime.datetime(2018, 4, 1, 0).strftime("%s")),
             "t_val": int(datetime.datetime(2017, 10, 1, 0).strftime("%s")),
             "delta_out": 6 * 31 * 24 * 3600,
+            "delta_space": hp.loguniform("delta", np.log(MONTH), np.log(20*YEAR)),
         },
     }
     return datasets[dataset]
