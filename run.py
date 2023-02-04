@@ -144,7 +144,7 @@ algorithms = {
             "bptt": hp.uniformint("bptt", 1, 10),
             # 'learning_rate': hp.uniform('learning_rate', 1e-5, 0.01),
             "hidden_size": hp.uniformint("hidden_size", 50, 250),
-            "embedding_size": hp.uniformint("embedding_size", 50, 300),
+            "num_components": hp.uniformint("num_components", 50, 300),
         },
         "fixed_params": {
             "stopping_criterion": "ndcg",
