@@ -6,17 +6,26 @@ from pathlib import Path
 
 from recpack.datasets import AdressaOneWeek, CosmeticsShop, RecsysChallenge2015
 from recpack.pipelines import PipelineBuilder
-from recpack.scenarios import TimedLastItemPrediction
+from recpack.scenarios import TimedLastItemPrediction, Timed
 from recpack.preprocessing.filters import MinItemsPerUser, MinUsersPerItem
 
 import pandas as pd
 import time
 
+from amazon_dataset import AmazonGamesDataset, AmazonToysAndGamesDataset
+
 DATASET_PATH = "/home/robinverachtert/datasets/"
+HOUR = 3600
+DAY = 24 * 3600
+WEEK = 7 * DAY
+MONTH = 31 * DAY
+YEAR = 365 * DAY
 
 
 def recsys_dataset(dataset_path):
-    ds = RecsysChallenge2015(path=dataset_path, filename="yoochoose-clicks.dat", preprocess_default=False)
+    ds = RecsysChallenge2015(
+        path=dataset_path, filename="yoochoose-clicks.dat", use_default_filters=False
+    )
     ds.add_filter(MinUsersPerItem(50, item_ix=ds.ITEM_IX, user_ix=ds.USER_IX))
     ds.add_filter(MinItemsPerUser(3, item_ix=ds.ITEM_IX, user_ix=ds.USER_IX))
 
@@ -26,25 +35,45 @@ def recsys_dataset(dataset_path):
 def get_datasets_info(dataset_path, dataset):
     datasets = {
         "adressa": {
-            "dataset": AdressaOneWeek(path=dataset_path, filename="adressa.csv"),
+            "dataset": AdressaOneWeek(path=dataset_path),
             "t": int(datetime.datetime(2017, 1, 7, 12).strftime("%s")),
             "t_val": int(datetime.datetime(2017, 1, 6, 12).strftime("%s")),
             "delta_out": 12 * 3600,
             "delta_space": hp.loguniform("delta", np.log(1800), np.log(7 * 24 * 3600)),
         },
         "cosmeticsshop": {
-            "dataset": CosmeticsShop(path=dataset_path, filename="cosmeticsshop_views.csv"),
+            "dataset": CosmeticsShop(
+                path=dataset_path, filename="cosmeticsshop_views.csv"
+            ),
             "t": int(datetime.datetime(2020, 2, 15, 0).strftime("%s")),
             "t_val": int(datetime.datetime(2020, 2, 1, 0).strftime("%s")),
             "delta_out": 14 * 24 * 3600,
-            "delta_space": hp.loguniform("delta", np.log(1800), np.log(152 * 24 * 3600)),
+            "delta_space": hp.loguniform(
+                "delta", np.log(1800), np.log(152 * 24 * 3600)
+            ),
         },
         "recsys2015": {
             "dataset": recsys_dataset(dataset_path),
             "t": int(datetime.datetime(2014, 9, 15, 0).strftime("%s")),
             "t_val": int(datetime.datetime(2014, 9, 1, 0).strftime("%s")),
             "delta_out": 14 * 24 * 3600,
-            "delta_space": hp.loguniform("delta", np.log(1800), np.log(180 * 24 * 3600)),
+            "delta_space": hp.loguniform(
+                "delta", np.log(1800), np.log(180 * 24 * 3600)
+            ),
+        },
+        "amazon_games": {
+            "dataset": AmazonGamesDataset(dataset_path),
+            "t": int(datetime.datetime(2018, 4, 1, 0).strftime("%s")),
+            "t_val": int(datetime.datetime(2017, 10, 1, 0).strftime("%s")),
+            "delta_out": 6 * 31 * 24 * 3600,
+            "delta_space": hp.loguniform("delta", np.log(MONTH), np.log(20 * YEAR)),
+        },
+        "amazon_toys_and_games": {
+            "dataset": AmazonToysAndGamesDataset(dataset_path),
+            "t": int(datetime.datetime(2018, 4, 1, 0).strftime("%s")),
+            "t_val": int(datetime.datetime(2017, 10, 1, 0).strftime("%s")),
+            "delta_out": 6 * 31 * 24 * 3600,
+            "delta_space": hp.loguniform("delta", np.log(MONTH), np.log(20 * YEAR)),
         },
     }
     return datasets[dataset]
@@ -55,7 +84,9 @@ algorithms = {
         "hyperopt_space": {
             "K": hp.uniformint("K", 50, 1000),
             "normalize_X": hp.choice("normalize_X", [True, False]),
-            "similarity": hp.choice("similarity", ["cosine", "conditional_probability"]),
+            "similarity": hp.choice(
+                "similarity", ["cosine", "conditional_probability"]
+            ),
         },
     },
     "Popularity": {
@@ -78,8 +109,17 @@ algorithms = {
         "hyperopt_space": {
             "K": hp.uniformint("K", 50, 1000),
             "predict_decay": hp.loguniform("predict_decay", np.log(1e-10), np.log(1)),
-            "similarity": hp.choice("similarity", ["cosine", "conditional_probability"]),
+            "similarity": hp.choice(
+                "similarity", ["cosine", "conditional_probability"]
+            ),
         },
+    },
+    "TARSItemKNNXia": {
+        "hyperopt_space": {
+            "fit_decay": hp.uniform("fit_decay", 0, 1),
+            "K": hp.uniformint("K", 50, 1000),
+            "decay_interval": hp.uniformint("decay_interval", 60, 24 * 3600),
+        }
     },
     "SequentialRules": {
         "hyperopt_space": {
@@ -90,9 +130,13 @@ algorithms = {
     "STAN": {
         "hyperopt_space": {
             "K": hp.uniformint("K", 50, 1000),
-            "interaction_decay": hp.loguniform("interaction_decay", np.log(1e-10), np.log(1)),
+            "interaction_decay": hp.loguniform(
+                "interaction_decay", np.log(1e-10), np.log(1)
+            ),
             "session_decay": hp.loguniform("session_decay", np.log(1e-10), np.log(1)),
-            "distance_from_match_decay": hp.loguniform("distance_from_match_decay", np.log(0.01), np.log(10)),
+            "distance_from_match_decay": hp.loguniform(
+                "distance_from_match_decay", np.log(0.01), np.log(10)
+            ),
         },
     },
     "GRU4RecNegSampling": {
@@ -100,7 +144,7 @@ algorithms = {
             "bptt": hp.uniformint("bptt", 1, 10),
             # 'learning_rate': hp.uniform('learning_rate', 1e-5, 0.01),
             "hidden_size": hp.uniformint("hidden_size", 50, 250),
-            "embedding_size": hp.uniformint("embedding_size", 50, 300),
+            "num_components": hp.uniformint("num_components", 50, 300),
         },
         "fixed_params": {
             "stopping_criterion": "ndcg",
@@ -122,10 +166,14 @@ algorithms = {
 @click.option("--dataset-path", help="path to the dataset files", default=DATASET_PATH)
 @click.option("--algorithm", help="The algorithm to run.")
 @click.option("--timeout", help="Optimisation timeout", default=3600)
-def run(dataset, dataset_path, algorithm, timeout):
-    print(f"running {algorithm} on {dataset}")
+@click.option("--scenario-name", default="Timed")
+def run(dataset, dataset_path, algorithm, timeout, scenario_name):
+    if scenario_name not in ["Timed", "TimedLastItemPrediction"]:
+        raise ValueError(f"{scenario_name} not supported.")
 
-    path_to_results = f"results_hyperopt/{dataset}"
+    print(f"running {algorithm} on {dataset}, with {scenario_name} scenario")
+
+    path_to_results = f"results_{scenario_name}/{dataset}"
 
     print(">> Loading dataset")
     im = get_datasets_info(dataset_path, dataset)["dataset"].load()
@@ -137,8 +185,14 @@ def run(dataset, dataset_path, algorithm, timeout):
     delta_out = get_datasets_info(dataset_path, dataset)["delta_out"]
 
     print(">> Splitting dataset")
-    scenario = TimedLastItemPrediction(t=t, t_validation=t_val, validation=True, delta_out=delta_out)
+    if scenario_name == "Timed":
+        scenario = Timed(t=t, t_validation=t_val, validation=True, delta_out=delta_out)
+    elif scenario_name == "TimedLastItemPrediction":
+        scenario = TimedLastItemPrediction(
+            t=t, t_validation=t_val, validation=True, delta_out=delta_out
+        )
     scenario.split(im)
+
     print("<< Split dataset")
 
     def evaluate(params):
@@ -155,8 +209,12 @@ def run(dataset, dataset_path, algorithm, timeout):
         pb_opt.set_test_data(scenario.validation_data)
         pb_opt.set_validation_data(scenario.validation_data)
 
-        pb_opt.set_full_training_data(scenario.validation_training_data.timestamps_gt(t_val - delta))
-        pb_opt.set_validation_training_data(scenario.validation_training_data.timestamps_gt(t_val - delta))
+        pb_opt.set_full_training_data(
+            scenario.validation_training_data.timestamps_gt(t_val - delta)
+        )
+        pb_opt.set_validation_training_data(
+            scenario.validation_training_data.timestamps_gt(t_val - delta)
+        )
 
         pipe = pb_opt.build()
         pipe.run()
@@ -164,7 +222,7 @@ def run(dataset, dataset_path, algorithm, timeout):
 
         # returning negative ndcg as loss, since hyperopt minimises things
         return {
-            "loss": -pipe.get_metrics()["ndcgk_10"].values[0],
+            "loss": -pipe.get_metrics()["NDCGK_10"].values[0],
             "run_time": end - start,
             "status": STATUS_OK,
         }
@@ -191,8 +249,10 @@ def run(dataset, dataset_path, algorithm, timeout):
     tpe_results["ndcg"] = -tpe_results["loss"]
     tpe_results["window_hours"] = tpe_results["delta"] / 3600
 
-    p = Path(path_to_results)
-    p.mkdir(exist_ok=True)
+    p1 = Path(f"results_{scenario_name}")
+    p1.mkdir(exist_ok=True)
+    p2 = Path(path_to_results)
+    p2.mkdir(exist_ok=True)
     tpe_results.to_csv(
         f"{path_to_results}/optimisation_results_{algorithm}.csv",
         header=True,
@@ -236,8 +296,12 @@ def run(dataset, dataset_path, algorithm, timeout):
 
     print(">> Running pipeline with optimal data")
     # Evaluate with optimal delta
-    test_pipeline.set_full_training_data(scenario.full_training_data.timestamps_gt(t - optimal_delta))
-    test_pipeline.set_validation_training_data(scenario.full_training_data.timestamps_gt(t - optimal_delta))
+    test_pipeline.set_full_training_data(
+        scenario.full_training_data.timestamps_gt(t - optimal_delta)
+    )
+    test_pipeline.set_validation_training_data(
+        scenario.full_training_data.timestamps_gt(t - optimal_delta)
+    )
 
     pipe = test_pipeline.build()
     pipe.run()
