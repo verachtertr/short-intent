@@ -1,2 +1,2 @@
-,calibratedrecallk_10,coveragek_10,normalizeddiscountedcumulativegaink_10
+,CalibratedRecallK_10,CoverageK_10,normalizeddiscountedcumulativegaink_10
 "CASER(L=6,T=3,U=20,activation_function_conv=relu,activation_function_fc=relu,batch_size=512,drop_ratio=0.0,keep_last=True,l2=0.02791877413290463,learning_rate=0.03,max_epochs=10,max_iter_no_change=5,min_improvement=0.0,num_components=46,predict_topK=100,save_best_to_file=False,seed=2432600999,size_conv_horizontal=5,size_conv_vertical=28,stop_early=False,stopping_criterion=<recpack.algorithms.stopping_criterion.StoppingCriterion object at 0x7f7750adcad0>,validation_sample_size=10000)",0.012975427783634742,0.0010363077834116732,0.0070434000978423
